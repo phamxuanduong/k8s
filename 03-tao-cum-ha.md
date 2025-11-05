@@ -561,7 +561,6 @@ echo
 
 Sau khi tạo cụm HA thành công:
 - **File 04**: Cài đặt Metrics Server (khuyến nghị)
-- **File 06**: Kiểm tra và troubleshooting
-- **File 07**: Best practices
+- **File 05**: Best Practices và vận hành cluster
 
 **Nguồn tài liệu**: kubernetes.io/docs/setup

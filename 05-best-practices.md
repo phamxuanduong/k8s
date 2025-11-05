@@ -1,4 +1,4 @@
-# 12 - Best Practices và Lưu ý quan trọng
+# 05 - Best Practices và Lưu ý quan trọng
 
 Các best practices để vận hành Kubernetes cluster hiệu quả và an toàn.
 
@@ -598,6 +598,6 @@ Sử dụng tools như:
 - [ ] Upgrade procedures documented
 - [ ] Security audit completed
 
-## Tiếp theo
+---
 
-- **File 13**: Scripts tự động để simplify operations
+**Nguồn tài liệu**: kubernetes.io/docs/tasks và kubernetes.io/docs/concepts

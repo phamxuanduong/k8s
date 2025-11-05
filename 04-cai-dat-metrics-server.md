@@ -311,7 +311,6 @@ chmod +x install-metrics-server.sh
 ## Tiếp theo
 
 Sau khi cài đặt Metrics Server:
-- **File 05**: Kiểm tra và troubleshooting
-- **File 06**: Best practices
+- **File 05**: Best Practices và vận hành cluster
 
 **Nguồn tài liệu**: https://github.com/kubernetes-sigs/metrics-server

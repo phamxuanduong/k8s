@@ -11,10 +11,9 @@ Hướng dẫn này bao gồm:
 - ✅ Triển khai cụm HA (High Availability) cho production
 - ✅ Cài đặt CNI plugins (Calico, Flannel, Cilium)
 - ✅ Cài đặt Metrics Server
-- ✅ Best practices và troubleshooting
-- ✅ Scripts tự động hóa
+- ✅ Best practices cho production
 
-## Cấu trúc tài liệu (7 files)
+## Cấu trúc tài liệu (5 files)
 
 ### File 01: Cài đặt cơ bản
 **`01-cai-dat-co-ban.md`** (9.0 KB)
@@ -73,20 +72,8 @@ Bao gồm:
 
 **Cần thiết cho**: kubectl top, HPA, VPA
 
-### File 05: Kiểm tra và Troubleshooting
-**`05-kiem-tra-troubleshooting.md`** (11 KB)
-
-Lệnh kiểm tra và troubleshooting cluster.
-
-Bao gồm:
-- Kiểm tra cluster health
-- Kiểm tra pods và nodes
-- Test networking
-- Các vấn đề thường gặp và cách xử lý
-- Debug commands
-
-### File 06: Best Practices
-**`06-best-practices.md`** (12 KB)
+### File 05: Best Practices
+**`05-best-practices.md`** (12 KB)
 
 Best practices cho production.
 
@@ -97,21 +84,6 @@ Bao gồm:
 - Resource management
 - Monitoring và logging
 - Certificate management
-
-### File 07: Scripts tự động
-**`07-scripts-tu-dong.md`** (17 KB)
-
-Scripts tự động hóa deployment và management.
-
-Bao gồm:
-- Script cài đặt node (prepare-node.sh)
-- Script cài đặt control plane
-- Script tạo cluster đơn
-- Script tạo single-node cluster
-- Script tạo HA cluster
-- Script health check
-- Script backup etcd
-- Script cleanup
 
 ---
 
@@ -126,7 +98,7 @@ Bao gồm:
     ↓
 04-cai-dat-metrics-server.md (khuyến nghị)
     ↓
-05-kiem-tra-troubleshooting.md (verify)
+05-best-practices.md (backup, monitoring)
 ```
 
 ### Scenario 2: Single-Node Cluster (all-in-one)
@@ -138,7 +110,7 @@ Bao gồm:
     ↓
 04-cai-dat-metrics-server.md (optional)
     ↓
-05-kiem-tra-troubleshooting.md (verify)
+05-best-practices.md (backup, monitoring)
 ```
 
 ### Scenario 3: HA Cluster (3 masters + workers)
@@ -150,9 +122,7 @@ Bao gồm:
     ↓
 04-cai-dat-metrics-server.md (khuyến nghị)
     ↓
-05-kiem-tra-troubleshooting.md (verify)
-    ↓
-06-best-practices.md (backup, monitoring)
+05-best-practices.md (backup, monitoring)
 ```
 
 ---
@@ -193,15 +163,11 @@ Bao gồm:
 ### Cài đặt nhanh Single-Node Cluster
 
 ```bash
-# 1. Trên node, chạy script chuẩn bị (từ File 01)
-curl -O https://your-repo/prepare-node.sh
-chmod +x prepare-node.sh
-sudo ./prepare-node.sh
+# 1. Làm theo File 01: Cài đặt cơ bản
+# Chuẩn bị hệ thống, cài containerd, kubeadm, kubelet, kubectl
 
-# 2. Chạy script tạo single-node cluster (từ File 02)
-curl -O https://your-repo/create-single-node-cluster.sh
-chmod +x create-single-node-cluster.sh
-./create-single-node-cluster.sh
+# 2. Làm theo File 02: Tạo cụm đơn → Option B (single-node)
+# Khởi tạo cluster và remove taint
 
 # 3. Verify
 kubectl get nodes
@@ -211,15 +177,11 @@ kubectl create deployment nginx --image=nginx
 ### Cài đặt nhanh Multi-Node Cluster
 
 ```bash
-# 1. Trên TẤT CẢ nodes, chạy script chuẩn bị
-curl -O https://your-repo/prepare-node.sh
-chmod +x prepare-node.sh
-sudo ./prepare-node.sh
+# 1. Trên TẤT CẢ nodes, làm theo File 01: Cài đặt cơ bản
+# Chuẩn bị hệ thống, cài containerd, kubeadm, kubelet, kubectl
 
-# 2. Trên CONTROL PLANE, chạy script tạo cluster
-curl -O https://your-repo/create-cluster.sh
-chmod +x create-cluster.sh
-./create-cluster.sh
+# 2. Trên CONTROL PLANE, làm theo File 02: Tạo cụm đơn → Option A
+# Khởi tạo cluster, cài CNI
 
 # 3. Trên WORKER NODES, join vào cluster
 # Lấy join command từ control plane:
@@ -233,20 +195,7 @@ kubectl get pods --all-namespaces
 
 ---
 
-## Công cụ hỗ trợ
-
-### Scripts có sẵn (File 07)
-
-- `prepare-node.sh` - Chuẩn bị node (File 01)
-- `create-cluster.sh` - Tạo multi-node cluster (File 02)
-- `create-single-node-cluster.sh` - Tạo single-node cluster (File 02)
-- `create-ha-master1.sh` - Tạo master đầu tiên cho HA (File 03)
-- `install-metrics-server.sh` - Cài Metrics Server (File 04)
-- `cluster-health-check.sh` - Kiểm tra cluster health
-- `backup-etcd.sh` - Backup etcd
-- `cleanup-cluster.sh` - Reset cluster
-
-### Lệnh thường dùng
+## Lệnh thường dùng
 
 ```bash
 # Kiểm tra nodes
@@ -270,7 +219,7 @@ kubeadm token create --print-join-command
 
 ## Troubleshooting
 
-Xem chi tiết trong **File 05** hoặc các vấn đề thường gặp:
+Các vấn đề thường gặp:
 
 ### Nodes NotReady
 - Kiểm tra CNI plugin đã cài chưa
@@ -317,9 +266,9 @@ kubectl taint nodes --all node-role.kubernetes.io/control-plane-
 ## Hỗ trợ
 
 Nếu gặp vấn đề:
-1. Xem **File 05** (Troubleshooting)
-2. Kiểm tra logs: `sudo journalctl -u kubelet -f`
-3. Verify cấu hình: `kubectl get pods -A`
+1. Kiểm tra logs: `sudo journalctl -u kubelet -f`
+2. Verify cấu hình: `kubectl get pods -A`
+3. Xem phần Troubleshooting phía trên
 
 ---
 
