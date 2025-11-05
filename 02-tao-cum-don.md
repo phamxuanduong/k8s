@@ -1,9 +1,10 @@
-# 02 - Tạo Cụm Đơn (Single Master Cluster)
+# 02 - Cụm All-in-One (1 Node)
 
-Hướng dẫn này giúp bạn tạo một Kubernetes cluster với 1 control plane node (master) và có thể có nhiều worker nodes HOẶC chỉ 1 node duy nhất (all-in-one). Phù hợp cho môi trường development, testing, hoặc production nhỏ.
+Hướng dẫn này giúp bạn tạo một Kubernetes cluster với **chỉ 1 node duy nhất**, vừa làm control plane vừa làm worker. Phù hợp cho môi trường development, testing, learning, và lab.
 
 **Điều kiện tiên quyết**:
-- ✅ Đã hoàn thành **File 01** trên tất cả nodes
+- ✅ Đã hoàn thành **File 01** trên node duy nhất
+- ✅ Node có tối thiểu: 4 CPU, 8 GB RAM, 50 GB disk
 
 ---
 
@@ -175,84 +176,7 @@ CoreDNS pods phải ở trạng thái **Running**.
 
 ---
 
-## Bước 4: Chọn loại cluster
-
-Chọn MỘT trong hai options sau:
-
-### Option A: Multi-Node Cluster (có worker nodes riêng)
-
-Chuyển sang [Bước 4A: Join Worker Nodes](#bước-4a-join-worker-nodes-multi-node)
-
-### Option B: Single-Node Cluster (all-in-one)
-
-Chuyển sang [Bước 4B: Cấu hình Single-Node](#bước-4b-cấu-hình-single-node-all-in-one)
-
----
-
-## Bước 4A: Join Worker Nodes (Multi-Node)
-
-**Dành cho cluster có worker nodes riêng.**
-
-### Lấy join command
-
-Nếu bạn đã lưu join command từ output của `kubeadm init`, sử dụng nó.
-
-Nếu mất, tạo lại từ control plane:
-
-```bash
-kubeadm token create --print-join-command
-```
-
-### Thực thi join command trên worker nodes
-
-**Trên MỖI WORKER NODE**, chạy join command:
-
-```bash
-sudo kubeadm join <control-plane-ip>:6443 \
-  --token <token> \
-  --discovery-token-ca-cert-hash sha256:<hash>
-```
-
-### Verify worker nodes đã join
-
-Từ control plane:
-
-```bash
-kubectl get nodes
-```
-
-Output:
-```
-NAME           STATUS   ROLES           AGE   VERSION
-k8s-master     Ready    control-plane   10m   v1.34.0
-k8s-worker-1   Ready    <none>          2m    v1.34.0
-k8s-worker-2   Ready    <none>          1m    v1.34.0
-```
-
-**Tất cả nodes phải có status Ready.**
-
-### Label worker nodes (Optional)
-
-```bash
-kubectl label node k8s-worker-1 node-role.kubernetes.io/worker=worker
-kubectl label node k8s-worker-2 node-role.kubernetes.io/worker=worker
-```
-
-Sau khi label:
-```
-NAME           STATUS   ROLES           AGE   VERSION
-k8s-master     Ready    control-plane   10m   v1.34.0
-k8s-worker-1   Ready    worker          2m    v1.34.0
-k8s-worker-2   Ready    worker          1m    v1.34.0
-```
-
-**Sau khi hoàn thành Option A, chuyển sang [Bước 5: Verify Cluster](#bước-5-verify-cluster)**
-
----
-
-## Bước 4B: Cấu hình Single-Node (All-in-One)
-
-**Dành cho cluster chỉ có 1 node duy nhất.**
+## Bước 4: Cấu hình All-in-One
 
 ### Tại sao cần cấu hình thêm?
 
@@ -342,9 +266,8 @@ Vì tất cả components (control plane + workloads) chạy trên 1 node.
 - ✅ Learning Kubernetes
 - ✅ Testing applications
 - ✅ CI/CD testing environments
+- ✅ Lab và demo
 - ❌ **KHÔNG** dùng cho production
-
-**Sau khi hoàn thành Option B, chuyển sang [Bước 5: Verify Cluster](#bước-5-verify-cluster)**
 
 ---
 
@@ -463,13 +386,14 @@ kubectl taint nodes --all node-role.kubernetes.io/control-plane-
 
 ---
 
-## Scripts tự động
+## Script tự động
 
-### Script tạo multi-node cluster
+### Script tạo cụm all-in-one
 
 ```bash
 #!/bin/bash
-# create-cluster.sh - Multi-node cluster
+# create-all-in-one-cluster.sh
+# Script tạo cụm Kubernetes All-in-One (1 node)
 
 set -e
 
@@ -477,60 +401,7 @@ POD_NETWORK_CIDR="192.168.0.0/16"
 CALICO_VERSION="v3.28.0"
 
 echo "=========================================="
-echo "Creating Kubernetes Cluster"
-echo "=========================================="
-echo
-
-# [1] Initialize control plane
-echo "[1/4] Initializing control plane..."
-sudo kubeadm init --pod-network-cidr=${POD_NETWORK_CIDR}
-echo "✓ Control plane initialized"
-echo
-
-# [2] Configure kubectl
-echo "[2/4] Configuring kubectl..."
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-echo "✓ kubectl configured"
-echo
-
-# [3] Install Calico CNI
-echo "[3/4] Installing Calico CNI..."
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/${CALICO_VERSION}/manifests/tigera-operator.yaml > /dev/null
-sleep 5
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/${CALICO_VERSION}/manifests/custom-resources.yaml > /dev/null
-echo "✓ Calico CNI installed"
-echo
-
-# [4] Wait for node ready
-echo "[4/4] Waiting for node ready..."
-kubectl wait --for=condition=ready node --all --timeout=300s
-echo "✓ Node ready"
-echo
-
-echo "=========================================="
-echo "Cluster Created Successfully!"
-echo "=========================================="
-echo
-echo "To join worker nodes:"
-echo "  kubeadm token create --print-join-command"
-echo
-```
-
-### Script tạo single-node cluster
-
-```bash
-#!/bin/bash
-# create-single-node-cluster.sh
-
-set -e
-
-POD_NETWORK_CIDR="192.168.0.0/16"
-CALICO_VERSION="v3.28.0"
-
-echo "=========================================="
-echo "Creating Single-Node Kubernetes Cluster"
+echo "Creating All-in-One Kubernetes Cluster"
 echo "=========================================="
 echo
 
@@ -588,28 +459,21 @@ echo "✓ Single-node configured"
 echo
 
 echo "=========================================="
-echo "Single-Node Cluster Ready!"
+echo "All-in-One Cluster Ready!"
 echo "=========================================="
 echo "Test: kubectl create deployment nginx --image=nginx"
 echo
 ```
 
+Lưu script thành file `create-all-in-one-cluster.sh` và chạy:
+```bash
+chmod +x create-all-in-one-cluster.sh
+./create-all-in-one-cluster.sh
+```
+
 ---
 
 ## Checklist
-
-### Multi-Node Cluster
-- [ ] Control plane đã được khởi tạo
-- [ ] kubectl đã được cấu hình
-- [ ] CNI plugin đã cài đặt và chạy
-- [ ] Control plane node Ready
-- [ ] CoreDNS pods Running
-- [ ] Worker nodes đã join thành công
-- [ ] Tất cả nodes Ready
-- [ ] Test deployment hoạt động
-- [ ] DNS resolution hoạt động
-
-### Single-Node Cluster
 - [ ] Control plane đã được khởi tạo
 - [ ] kubectl đã được cấu hình
 - [ ] CNI plugin đã cài đặt và chạy
@@ -624,9 +488,11 @@ echo
 
 ## Tiếp theo
 
-Sau khi tạo cụm thành công:
-- **File 03**: Tạo cụm HA (nếu cần production với 3 masters)
+Sau khi tạo cụm all-in-one thành công:
+- **File 03**: Tạo cụm HA (nếu cần production với 3 masters + workers)
 - **File 04**: Cài đặt Metrics Server (khuyến nghị)
 - **File 05**: Best Practices và vận hành cluster
+
+**Lưu ý**: All-in-one cluster KHÔNG phù hợp cho production. Nếu cần production, xem **File 03** để tạo cụm HA.
 
 **Nguồn tài liệu**: kubernetes.io/docs/setup

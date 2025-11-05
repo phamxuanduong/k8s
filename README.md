@@ -6,9 +6,8 @@ Tài liệu hướng dẫn chi tiết cài đặt và triển khai Kubernetes cl
 
 Hướng dẫn này bao gồm:
 - ✅ Cài đặt Kubernetes v1.34 (phiên bản mới nhất tháng 10/2025)
-- ✅ Triển khai cụm đơn (Single Master) cho dev/test
-- ✅ Triển khai cụm đơn node (All-in-one) cho learning
-- ✅ Triển khai cụm HA (High Availability) cho production
+- ✅ Triển khai cụm All-in-One (1 node) cho dev/test/learning
+- ✅ Triển khai cụm HA (3 masters + workers) cho production
 - ✅ Cài đặt CNI plugins (Calico, Flannel, Cilium)
 - ✅ Cài đặt Metrics Server
 - ✅ Best practices cho production
@@ -26,20 +25,21 @@ Tất cả bước chuẩn bị cần thiết. Bao gồm:
 
 **Thực hiện trên**: TẤT CẢ CÁC NODES
 
-### File 02: Tạo cụm đơn
+### File 02: Cụm All-in-One
 **`02-tao-cum-don.md`** (15 KB)
 
-Triển khai cluster với 1 control plane node. **Bao gồm cả multi-node và single-node.**
+Triển khai cluster với **1 node duy nhất**, vừa làm control plane vừa làm worker.
 
 Bao gồm:
 - Khởi tạo control plane với kubeadm init
 - Cấu hình kubectl
 - Cài đặt CNI plugin (Calico/Flannel/Cilium)
-- **Option A**: Join worker nodes (multi-node)
-- **Option B**: Cấu hình single-node (all-in-one)
+- Remove taint để chạy workloads trên control plane
+- Tối ưu resource limits
 - Verify cluster
 
-**Phù hợp cho**: Development, Testing, Learning, Small Production
+**Phù hợp cho**: Development, Testing, Learning, Lab, Demo
+**KHÔNG phù hợp**: Production
 
 ### File 03: Tạo cụm HA
 **`03-tao-cum-ha.md`** (14 KB)
@@ -89,41 +89,33 @@ Bao gồm:
 
 ## Quy trình triển khai
 
-### Scenario 1: Multi-Node Cluster (1 master + workers)
-
-```
-01-cai-dat-co-ban.md (trên tất cả nodes)
-    ↓
-02-tao-cum-don.md → Option A (join workers)
-    ↓
-04-cai-dat-metrics-server.md (khuyến nghị)
-    ↓
-05-best-practices.md (backup, monitoring)
-```
-
-### Scenario 2: Single-Node Cluster (all-in-one)
+### Scenario 1: All-in-One Cluster (1 node duy nhất)
 
 ```
 01-cai-dat-co-ban.md (trên 1 node)
     ↓
-02-tao-cum-don.md → Option B (single-node)
+02-tao-cum-don.md (all-in-one)
     ↓
 04-cai-dat-metrics-server.md (optional)
     ↓
 05-best-practices.md (backup, monitoring)
 ```
 
-### Scenario 3: HA Cluster (3 masters + workers)
+**Phù hợp cho**: Dev, Test, Learning, Lab
+
+### Scenario 2: HA Cluster (3 masters + workers)
 
 ```
 01-cai-dat-co-ban.md (trên tất cả nodes + LB)
     ↓
-03-tao-cum-ha.md (setup 3 masters)
+03-tao-cum-ha.md (setup 3 masters + workers)
     ↓
 04-cai-dat-metrics-server.md (khuyến nghị)
     ↓
 05-best-practices.md (backup, monitoring)
 ```
+
+**Phù hợp cho**: Production
 
 ---
 
@@ -131,24 +123,15 @@ Bao gồm:
 
 ### Hardware tối thiểu
 
-**Control Plane Node:**
-- CPU: 2+ cores (khuyến nghị 4+ cores)
-- RAM: 2 GB (khuyến nghị 4 GB+)
-- Disk: 20 GB+
-
-**Worker Nodes:**
-- CPU: 1+ cores
-- RAM: 2 GB
-- Disk: 20 GB+
-
-**Single-Node Cluster:**
+**All-in-One Cluster (1 node):**
 - CPU: 4+ cores
 - RAM: 8+ GB
 - Disk: 50+ GB
 
-**HA Setup thêm:**
-- 3 control plane nodes
-- 1 load balancer (1 CPU, 1 GB RAM)
+**HA Cluster:**
+- **3 Control Plane Nodes**: Mỗi node 2+ CPUs, 4+ GB RAM, 20+ GB disk
+- **3+ Worker Nodes**: Mỗi node 1+ CPUs, 2+ GB RAM, 20+ GB disk
+- **1 Load Balancer**: 1 CPU, 1 GB RAM
 
 ### Software
 
@@ -160,33 +143,33 @@ Bao gồm:
 
 ## Quick Start
 
-### Cài đặt nhanh Single-Node Cluster
+### Cài đặt nhanh All-in-One Cluster
 
 ```bash
 # 1. Làm theo File 01: Cài đặt cơ bản
 # Chuẩn bị hệ thống, cài containerd, kubeadm, kubelet, kubectl
 
-# 2. Làm theo File 02: Tạo cụm đơn → Option B (single-node)
-# Khởi tạo cluster và remove taint
+# 2. Làm theo File 02: Cụm All-in-One
+# Khởi tạo cluster, cài CNI, remove taint
 
 # 3. Verify
 kubectl get nodes
 kubectl create deployment nginx --image=nginx
 ```
 
-### Cài đặt nhanh Multi-Node Cluster
+### Cài đặt nhanh HA Cluster
 
 ```bash
-# 1. Trên TẤT CẢ nodes, làm theo File 01: Cài đặt cơ bản
-# Chuẩn bị hệ thống, cài containerd, kubeadm, kubelet, kubectl
+# 1. Chuẩn bị load balancer (HAProxy)
 
-# 2. Trên CONTROL PLANE, làm theo File 02: Tạo cụm đơn → Option A
-# Khởi tạo cluster, cài CNI
+# 2. Trên TẤT CẢ 3 master nodes và worker nodes:
+#    Làm theo File 01: Cài đặt cơ bản
 
-# 3. Trên WORKER NODES, join vào cluster
-# Lấy join command từ control plane:
-kubeadm token create --print-join-command
-# Chạy command đó trên worker nodes
+# 3. Làm theo File 03: Tạo cụm HA
+#    - Khởi tạo master node đầu tiên
+#    - Join 2 master nodes còn lại
+#    - Cài CNI
+#    - Join worker nodes
 
 # 4. Verify
 kubectl get nodes
